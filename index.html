@@ -1,0 +1,928 @@
+<!--
+  File: index.html
+  Long-scrolling voting page (static) — WHITE / Lightspark-inspired
+
+  ✅ Includes:
+  - Estimated cost in CAD (est.)
+  - Vote buttons (Yes/No)
+  - Shows vote totals "on this device" per car (static sites can’t show true community totals without a backend)
+  - Pre-seeds ONE example as “already voted” so you can see the “voted state” + vote display immediately
+
+  Images:
+  /images/<id>.jpg  (e.g. /images/baojun-yep-plus.jpg)
+
+  NOTE:
+  - Because this is GitHub + Netlify static HTML, the “votes” shown are per-device only.
+  - When you’re ready, we can swap the vote storage to a Netlify Function + DB to show real totals.
+-->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>China Cars Canada — Vote</title>
+  <meta name="description" content="Vote on the Chinese EVs Canadians want to buy." />
+  <style>
+    :root{
+      /* White scheme */
+      --bg:#F6F8FF;
+      --bg2:#FFFFFF;
+      --ink:#0B1020;
+      --muted:rgba(11,16,32,.68);
+      --muted2:rgba(11,16,32,.52);
+
+      --card:#FFFFFF;
+      --stroke:rgba(11,16,32,.10);
+      --stroke2:rgba(11,16,32,.14);
+
+      --yes:#18B981;
+      --no:#E93D6E;
+
+      /* Lightspark-ish accents */
+      --spark1:#28D7FF;
+      --spark2:#6D5CFF;
+      --spark3:#18B981;
+      --spark4:#FFB020;
+
+      --shadow: 0 18px 55px rgba(11,16,32,.10);
+      --shadow2: 0 10px 30px rgba(11,16,32,.08);
+      --radius: 22px;
+      --maxw: 1120px;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      color:var(--ink);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background:
+        radial-gradient(900px 520px at 20% -10%, rgba(40,215,255,.18), transparent 55%),
+        radial-gradient(900px 520px at 85% 0%, rgba(109,92,255,.14), transparent 55%),
+        radial-gradient(900px 520px at 20% 120%, rgba(24,185,129,.12), transparent 55%),
+        linear-gradient(180deg, var(--bg) 0%, #FFFFFF 60%, var(--bg) 100%);
+      overflow-x:hidden;
+    }
+
+    a{color:inherit}
+    code{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size:.95em;
+      padding:2px 6px;
+      border-radius:10px;
+      background: rgba(11,16,32,.05);
+      border: 1px solid rgba(11,16,32,.08);
+    }
+
+    .wrap{
+      width:min(var(--maxw), calc(100% - 32px));
+      margin:0 auto;
+    }
+
+    /* Top bar */
+    .topbar{
+      position:sticky;
+      top:0;
+      z-index:50;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      background: rgba(246,248,255,.78);
+      border-bottom:1px solid rgba(11,16,32,.08);
+    }
+    .topbar-inner{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:14px 0;
+      gap:14px;
+    }
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-width: 230px;
+    }
+    .mark{
+      width:38px;height:38px;border-radius:15px;
+      background:
+        radial-gradient(14px 14px at 35% 35%, rgba(255,255,255,.90), transparent 60%),
+        linear-gradient(135deg, rgba(40,215,255,.95), rgba(109,92,255,.95) 55%, rgba(24,185,129,.92));
+      box-shadow: 0 14px 40px rgba(109,92,255,.18);
+      border:1px solid rgba(11,16,32,.10);
+    }
+    .brand h1{
+      font-size:14px;
+      margin:0;
+      letter-spacing:.2px;
+      line-height:1.1;
+    }
+    .brand p{
+      margin:2px 0 0;
+      color:var(--muted2);
+      font-size:12px;
+      line-height:1.2;
+    }
+
+    .stats{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+    .pill{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 10px;
+      border-radius:999px;
+      background: rgba(255,255,255,.70);
+      border:1px solid rgba(11,16,32,.10);
+      color:var(--muted);
+      font-size:12px;
+      box-shadow: var(--shadow2);
+      white-space:nowrap;
+    }
+    .dot{
+      width:8px;height:8px;border-radius:99px;
+      background: rgba(11,16,32,.25);
+    }
+    .dot.y{ background: var(--yes); box-shadow:0 0 0 3px rgba(24,185,129,.14);}
+    .dot.n{ background: var(--no); box-shadow:0 0 0 3px rgba(233,61,110,.14);}
+
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid rgba(11,16,32,.12);
+      background: rgba(255,255,255,.78);
+      color: var(--ink);
+      text-decoration:none;
+      font-size:13px;
+      box-shadow: var(--shadow2);
+      transition: transform .15s ease, background .15s ease, border-color .15s ease;
+      cursor:pointer;
+      user-select:none;
+    }
+    .btn:hover{
+      transform: translateY(-1px);
+      background: rgba(255,255,255,.92);
+      border-color: rgba(11,16,32,.16);
+    }
+    .btn.primary{
+      background: linear-gradient(135deg, rgba(40,215,255,.92), rgba(109,92,255,.90));
+      border-color: rgba(11,16,32,.10);
+      color: #071022;
+    }
+    .btn.primary:hover{
+      background: linear-gradient(135deg, rgba(40,215,255,1), rgba(109,92,255,1));
+    }
+    .btn.ghost{
+      background: transparent;
+      box-shadow:none;
+    }
+
+    /* Hero */
+    .hero{ padding:26px 0 10px; }
+    .hero-grid{
+      display:grid;
+      grid-template-columns: 1.35fr .65fr;
+      gap:16px;
+      align-items:stretch;
+    }
+    .hero-card{
+      border-radius: var(--radius);
+      border: 1px solid rgba(11,16,32,.10);
+      background:
+        radial-gradient(900px 280px at 15% 15%, rgba(40,215,255,.16), transparent 60%),
+        radial-gradient(700px 260px at 85% 35%, rgba(109,92,255,.12), transparent 55%),
+        linear-gradient(180deg, rgba(255,255,255,.92), rgba(255,255,255,.72));
+      box-shadow: var(--shadow);
+      padding:18px 18px 16px;
+      position:relative;
+      overflow:hidden;
+    }
+
+    .hero-title h2{
+      margin:0;
+      font-size:20px;
+      letter-spacing:.2px;
+      line-height:1.15;
+    }
+    .hero-title p{
+      margin:8px 0 0;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.4;
+      max-width: 62ch;
+    }
+
+    .cta{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:14px;
+    }
+
+    .how{
+      border-radius: var(--radius);
+      border:1px solid rgba(11,16,32,.10);
+      background: rgba(255,255,255,.82);
+      box-shadow: var(--shadow);
+      padding:16px;
+    }
+    .how h3{
+      margin:0;
+      font-size:14px;
+      letter-spacing:.2px;
+    }
+    .how ul{
+      margin:10px 0 0;
+      padding:0 0 0 16px;
+      color:var(--muted);
+      font-size:12.5px;
+      line-height:1.45;
+    }
+    .how li{ margin:8px 0; }
+    .tiny{
+      margin-top:10px;
+      color:var(--muted2);
+      font-size:12px;
+      line-height:1.35;
+    }
+
+    /* Car feed */
+    .feed{ padding: 8px 0 44px; }
+
+    .card{
+      display:grid;
+      grid-template-columns: 1.25fr .75fr;
+      gap:16px;
+      padding:16px;
+      border-radius: var(--radius);
+      background:
+        radial-gradient(700px 280px at 20% 10%, rgba(40,215,255,.12), transparent 55%),
+        radial-gradient(700px 280px at 90% 40%, rgba(109,92,255,.10), transparent 55%),
+        linear-gradient(180deg, rgba(255,255,255,.95), rgba(255,255,255,.72));
+      border:1px solid rgba(11,16,32,.10);
+      box-shadow: var(--shadow);
+      margin: 14px 0;
+      overflow:hidden;
+      position:relative;
+    }
+
+    .img{
+      border-radius: 18px;
+      overflow:hidden;
+      border:1px solid rgba(11,16,32,.10);
+      background: rgba(11,16,32,.02);
+      min-height: 240px;
+      box-shadow: 0 14px 40px rgba(11,16,32,.10);
+    }
+    .img img{
+      display:block;
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      transform: scale(1.01);
+    }
+
+    .meta{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      min-height: 240px;
+    }
+    .title{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .title h4{
+      margin:0;
+      font-size:18px;
+      letter-spacing:.2px;
+      line-height:1.15;
+    }
+    .sub{
+      margin:4px 0 0;
+      color:var(--muted);
+      font-size:12.5px;
+      line-height:1.35;
+    }
+
+    .tagrow{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:10px;
+    }
+    .tag{
+      font-size:12px;
+      color: var(--muted);
+      border: 1px solid rgba(11,16,32,.10);
+      background: rgba(255,255,255,.70);
+      padding:6px 10px;
+      border-radius:999px;
+      box-shadow: var(--shadow2);
+    }
+    .tag.spark{
+      color: rgba(11,16,32,.78);
+      border-color: rgba(40,215,255,.30);
+      background: linear-gradient(135deg, rgba(40,215,255,.18), rgba(109,92,255,.12));
+    }
+    .tag.voted{
+      border-color: rgba(24,185,129,.30);
+      background: linear-gradient(135deg, rgba(24,185,129,.18), rgba(40,215,255,.10));
+      color: rgba(11,16,32,.78);
+    }
+
+    .specs{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:8px;
+      margin-top:4px;
+    }
+    .spec{
+      border-radius:16px;
+      border:1px solid rgba(11,16,32,.10);
+      background: rgba(255,255,255,.78);
+      padding:10px;
+      box-shadow: var(--shadow2);
+    }
+    .k{
+      font-size:11px;
+      color:var(--muted2);
+      letter-spacing:.3px;
+      text-transform:uppercase;
+    }
+    .v{
+      margin-top:4px;
+      font-size:13px;
+      color:var(--ink);
+      line-height:1.25;
+    }
+
+    .actions{
+      margin-top:auto;
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .voteGroup{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .voteBtn{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:10px 12px;
+      border-radius: 16px;
+      border:1px solid rgba(11,16,32,.12);
+      background: rgba(255,255,255,.86);
+      color:var(--ink);
+      cursor:pointer;
+      font-size:13px;
+      transition: transform .15s ease, background .15s ease, border-color .15s ease, opacity .15s ease;
+      user-select:none;
+      box-shadow: var(--shadow2);
+    }
+    .voteBtn:hover{
+      transform: translateY(-1px);
+      background: rgba(255,255,255,1);
+      border-color: rgba(11,16,32,.16);
+    }
+    .voteBtn.yes{
+      border-color: rgba(24,185,129,.28);
+      background: linear-gradient(135deg, rgba(24,185,129,.14), rgba(40,215,255,.08));
+    }
+    .voteBtn.no{
+      border-color: rgba(233,61,110,.28);
+      background: linear-gradient(135deg, rgba(233,61,110,.12), rgba(109,92,255,.08));
+    }
+    .voteBtn[disabled]{
+      cursor:not-allowed;
+      opacity:.55;
+      transform:none;
+    }
+
+    .voteState{
+      color: var(--muted);
+      font-size:12.5px;
+      min-width: 180px;
+    }
+
+    .voteCounts{
+      margin-top:8px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      color: var(--muted);
+      font-size:12px;
+    }
+    .miniPill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:7px 10px;
+      border-radius:999px;
+      border:1px solid rgba(11,16,32,.10);
+      background: rgba(255,255,255,.78);
+      box-shadow: var(--shadow2);
+    }
+    .miniDot{
+      width:8px;height:8px;border-radius:99px;
+      background: rgba(11,16,32,.25);
+    }
+    .miniDot.y{background:var(--yes);}
+    .miniDot.n{background:var(--no);}
+
+    .link{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      font-size:13px;
+      color: rgba(11,16,32,.85);
+      text-decoration:none;
+      border-bottom:1px dashed rgba(11,16,32,.28);
+      padding-bottom:2px;
+    }
+    .link:hover{ border-bottom-color: rgba(11,16,32,.55); }
+
+    .footer{
+      padding: 22px 0 50px;
+      color: var(--muted2);
+      font-size: 12px;
+      line-height:1.45;
+      text-align:center;
+    }
+
+    @media (max-width: 860px){
+      .hero-grid{ grid-template-columns: 1fr; }
+      .card{ grid-template-columns: 1fr; }
+      .img{ min-height: 220px; }
+      .meta{ min-height:auto; }
+      .stats{ justify-content:flex-start; }
+      .brand{ min-width: unset; }
+      .voteState{ min-width: unset; }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <div class="brand">
+        <div class="mark" aria-hidden="true"></div>
+        <div>
+          <h1>China Cars Canada</h1>
+          <p>Scroll + vote. Simple signal 🇨🇦</p>
+        </div>
+      </div>
+
+      <div class="stats" aria-live="polite">
+        <div class="pill"><span class="dot"></span><span id="statCars">0 cars</span></div>
+        <div class="pill"><span class="dot y"></span><span id="statYes">0 yes</span></div>
+        <div class="pill"><span class="dot n"></span><span id="statNo">0 no</span></div>
+        <button class="btn ghost" id="resetVotesBtn" type="button" title="Clears local votes on this device">
+          Reset my votes
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <div class="hero-grid">
+        <div class="hero-card">
+          <div class="hero-title">
+            <div>
+              <h2>Which Chinese EVs would Canadians actually buy?</h2>
+              <p>
+                Tap <strong>Yes</strong> or <strong>No</strong>. Your vote is stored only on <em>this device</em>.
+                (Real “community totals” need a backend — easy to add later.)
+              </p>
+            </div>
+          </div>
+
+          <div class="cta">
+            <button class="btn primary" id="jumpFirstBtn" type="button">Start voting ↓</button>
+            <button class="btn" id="shuffleBtn" type="button">Shuffle order</button>
+            <button class="btn" id="exportBtn" type="button">Export my votes</button>
+          </div>
+        </div>
+
+        <aside class="how">
+          <h3>Quick setup</h3>
+          <ul>
+            <li>Images: <code>/images/&lt;id&gt;.jpg</code></li>
+            <li>Data: edit the <code>CARS</code> array in this file</li>
+            <li>Deploy: GitHub → Netlify (no build command)</li>
+          </ul>
+          <div class="tiny">
+            This version shows per-device vote counts. For real totals later, we’ll add a Netlify Function endpoint.
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="feed" id="feed" aria-label="Car voting feed"></section>
+
+    <footer class="footer">
+      White theme, fast scroll, frictionless votes. Next upgrade: real community totals via Netlify Functions.
+    </footer>
+  </main>
+
+  <script>
+    // ==========
+    // 1) DATA (add/change estimated CAD here)
+    // ==========
+    const CARS = [
+      { id:"baojun-yep-plus", make:"Baojun", model:"Yep Plus", body:"Compact Electric SUV", est_cad:"$28k–$38k (est.)", range_km:"~401", range_std:"CLTC", drivetrain:"RWD", battery:"LFP", length_mm:"3996", link:"https://www.sgmw.com.cn/" },
+      { id:"baojun-yep", make:"Baojun", model:"Yep", body:"Mini Electric SUV", est_cad:"$20k–$28k (est.)", range_km:"~303", range_std:"CLTC", drivetrain:"RWD", battery:"LFP", length_mm:"3381", link:"https://www.sgmw.com.cn/" },
+      { id:"chery-icar-03", make:"Chery", model:"iCar 03", body:"Boxy Electric SUV", est_cad:"$35k–$50k (est.)", range_km:"~401–501", range_std:"CLTC", drivetrain:"RWD/AWD", battery:"LFP/NMC", length_mm:"4406", link:"https://www.cheryinternational.com/" },
+      { id:"byd-atto-3", make:"BYD", model:"Atto 3", body:"Compact SUV", est_cad:"$38k–$52k (est.)", range_km:"~420–480", range_std:"WLTP", drivetrain:"FWD", battery:"LFP", length_mm:"4455", link:"https://www.byd.com/" },
+      { id:"byd-seagull", make:"BYD", model:"Seagull", body:"City Hatchback", est_cad:"$18k–$26k (est.)", range_km:"~305–405", range_std:"CLTC", drivetrain:"FWD", battery:"LFP", length_mm:"3780", link:"https://www.byd.com/" },
+
+      { id:"xpeng-g6", make:"Xpeng", model:"G6", body:"Coupe SUV", est_cad:"$55k–$75k (est.)", range_km:"~570–755", range_std:"CLTC", drivetrain:"RWD/AWD", battery:"LFP/NMC", length_mm:"4753", link:"https://www.xpeng.com/" },
+      { id:"zeekr-001", make:"ZEEKR", model:"001", body:"Shooting Brake", est_cad:"$70k–$95k (est.)", range_km:"~546–741", range_std:"CLTC", drivetrain:"RWD/AWD", battery:"NMC", length_mm:"4970", link:"https://www.zeekrlife.com/" },
+      { id:"wuling-mini-ev", make:"Wuling", model:"Hongguang Mini EV", body:"Microcar", est_cad:"$12k–$18k (est.)", range_km:"~120–215", range_std:"CLTC", drivetrain:"RWD", battery:"LFP", length_mm:"2917", link:"https://www.sgmw.com.cn/" },
+    ];
+
+    // ==========
+    // 2) VOTING (localStorage)
+    // ==========
+    const VOTE_KEY = "ccc_votes_v1";     // stores { [carId]: "yes"|"no" }
+    const COUNT_KEY = "ccc_counts_v1";   // stores { [carId]: {yes:number,no:number} } (device-only)
+
+    function loadJSON(key, fallback){
+      try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }
+      catch { return fallback; }
+    }
+    function saveJSON(key, obj){ localStorage.setItem(key, JSON.stringify(obj)); }
+
+    function loadVotes(){ return loadJSON(VOTE_KEY, {}); }
+    function loadCounts(){
+      const base = {};
+      for (const c of CARS) base[c.id] = { yes:0, no:0 };
+      const stored = loadJSON(COUNT_KEY, base);
+      // ensure all cars exist
+      for (const c of CARS){
+        if (!stored[c.id]) stored[c.id] = { yes:0, no:0 };
+      }
+      return stored;
+    }
+
+    function setVote(carId, value){
+      const votes = loadVotes();
+      const counts = loadCounts();
+
+      // If user had a previous vote, decrement that count
+      const prev = votes[carId] || null;
+      if (prev === "yes") counts[carId].yes = Math.max(0, (counts[carId].yes || 0) - 1);
+      if (prev === "no")  counts[carId].no  = Math.max(0, (counts[carId].no  || 0) - 1);
+
+      // Apply new vote
+      votes[carId] = value;
+      if (value === "yes") counts[carId].yes = (counts[carId].yes || 0) + 1;
+      if (value === "no")  counts[carId].no  = (counts[carId].no  || 0) + 1;
+
+      saveJSON(VOTE_KEY, votes);
+      saveJSON(COUNT_KEY, counts);
+
+      updateTopStats();
+      syncCardVoteState(carId);
+      syncCardCounts(carId);
+    }
+
+    function getVote(carId){
+      const votes = loadVotes();
+      return votes[carId] || null;
+    }
+
+    function resetVotes(){
+      localStorage.removeItem(VOTE_KEY);
+      localStorage.removeItem(COUNT_KEY);
+      seedExampleVotedCard(true); // reseed demo after reset
+      updateTopStats();
+      document.querySelectorAll("[data-car]").forEach(card => {
+        syncCardVoteState(card.dataset.car);
+        syncCardCounts(card.dataset.car);
+      });
+    }
+
+    function countVotes(){
+      const votes = loadVotes();
+      let yes=0, no=0;
+      for (const k in votes){
+        if (votes[k] === "yes") yes++;
+        if (votes[k] === "no") no++;
+      }
+      return { yes, no, total: Object.keys(votes).length };
+    }
+
+    // ==========
+    // 3) RENDER
+    // ==========
+    const feed = document.getElementById("feed");
+
+    function fmt(val, suffix=""){
+      if (val === null || val === undefined) return "—";
+      const s = String(val).trim();
+      if (!s || s === "—") return "—";
+      return s + suffix;
+    }
+
+    function buildCard(car){
+      const card = document.createElement("article");
+      card.className = "card";
+      card.id = `car-${car.id}`;
+      card.dataset.car = car.id;
+
+      const imgWrap = document.createElement("div");
+      imgWrap.className = "img";
+      const img = document.createElement("img");
+      img.alt = `${car.make} ${car.model}`;
+      img.loading = "lazy";
+      img.src = `/images/${car.id}.jpg`;
+      img.onerror = () => {
+        img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(`
+          <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800">
+            <defs>
+              <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#28D7FF" stop-opacity=".18"/>
+                <stop offset=".55" stop-color="#6D5CFF" stop-opacity=".14"/>
+                <stop offset="1" stop-color="#18B981" stop-opacity=".12"/>
+              </linearGradient>
+            </defs>
+            <rect width="100%" height="100%" fill="#FFFFFF"/>
+            <rect x="40" y="40" width="1120" height="720" rx="40" fill="url(#g)" stroke="rgba(11,16,32,.12)" />
+            <text x="80" y="160" fill="rgba(11,16,32,.90)" font-family="ui-sans-serif,system-ui" font-size="56" font-weight="700">
+              Missing image
+            </text>
+            <text x="80" y="230" fill="rgba(11,16,32,.62)" font-family="ui-sans-serif,system-ui" font-size="28">
+              /images/${car.id}.jpg
+            </text>
+            <text x="80" y="320" fill="rgba(11,16,32,.62)" font-family="ui-sans-serif,system-ui" font-size="28">
+              ${car.make} ${car.model}
+            </text>
+          </svg>
+        `);
+      };
+      imgWrap.appendChild(img);
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+
+      const title = document.createElement("div");
+      title.className = "title";
+      title.innerHTML = `
+        <div>
+          <h4>${car.make} ${car.model}</h4>
+          <div class="sub">${car.body || ""}</div>
+          <div class="tagrow" id="tags-${car.id}">
+            <span class="tag spark">Est. ${car.est_cad || "—"}</span>
+            <span class="tag">${car.range_std ? car.range_std : "Range"}</span>
+            <span class="tag">${car.drivetrain || "—"}</span>
+          </div>
+        </div>
+      `;
+
+      const specs = document.createElement("div");
+      specs.className = "specs";
+      specs.innerHTML = `
+        <div class="spec">
+          <div class="k">Estimated CAD</div>
+          <div class="v">${fmt(car.est_cad)}</div>
+        </div>
+        <div class="spec">
+          <div class="k">Range</div>
+          <div class="v">${fmt(car.range_km)} km <span style="color:var(--muted2);font-size:12px">(${fmt(car.range_std)})</span></div>
+        </div>
+        <div class="spec">
+          <div class="k">Drivetrain</div>
+          <div class="v">${fmt(car.drivetrain)}</div>
+        </div>
+        <div class="spec">
+          <div class="k">Battery</div>
+          <div class="v">${fmt(car.battery)}</div>
+        </div>
+      `;
+
+      const actions = document.createElement("div");
+      actions.className = "actions";
+
+      const voteGroup = document.createElement("div");
+      voteGroup.className = "voteGroup";
+
+      const yesBtn = document.createElement("button");
+      yesBtn.className = "voteBtn yes";
+      yesBtn.type = "button";
+      yesBtn.innerHTML = "👍 Yes";
+      yesBtn.addEventListener("click", () => setVote(car.id, "yes"));
+
+      const noBtn = document.createElement("button");
+      noBtn.className = "voteBtn no";
+      noBtn.type = "button";
+      noBtn.innerHTML = "👎 No";
+      noBtn.addEventListener("click", () => setVote(car.id, "no"));
+
+      const state = document.createElement("div");
+      state.className = "voteState";
+      state.id = `state-${car.id}`;
+
+      voteGroup.appendChild(yesBtn);
+      voteGroup.appendChild(noBtn);
+      voteGroup.appendChild(state);
+
+      const link = document.createElement("a");
+      link.className = "link";
+      link.href = car.link || "#";
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.innerHTML = "Learn more ↗";
+
+      actions.appendChild(voteGroup);
+      actions.appendChild(link);
+
+      const voteCounts = document.createElement("div");
+      voteCounts.className = "voteCounts";
+      voteCounts.innerHTML = `
+        <span class="miniPill" title="Device-only totals (static site)">
+          <span class="miniDot y"></span> Yes: <span id="yesCount-${car.id}">0</span>
+        </span>
+        <span class="miniPill" title="Device-only totals (static site)">
+          <span class="miniDot n"></span> No: <span id="noCount-${car.id}">0</span>
+        </span>
+        <span class="miniPill" title="Static site note">
+          Totals shown: <strong>this device</strong>
+        </span>
+      `;
+
+      meta.appendChild(title);
+      meta.appendChild(specs);
+      meta.appendChild(actions);
+      meta.appendChild(voteCounts);
+
+      card.appendChild(imgWrap);
+      card.appendChild(meta);
+
+      return card;
+    }
+
+    function syncCardVoteState(carId){
+      const card = document.querySelector(`[data-car="${carId}"]`);
+      if (!card) return;
+
+      const yesBtn = card.querySelector(".voteBtn.yes");
+      const noBtn  = card.querySelector(".voteBtn.no");
+      const state  = card.querySelector(`#state-${carId}`);
+      const tagWrap = card.querySelector(`#tags-${carId}`);
+
+      const v = getVote(carId);
+
+      // remove existing "Voted" tag
+      if (tagWrap){
+        [...tagWrap.querySelectorAll(".tag.voted")].forEach(el => el.remove());
+      }
+
+      if (!v){
+        yesBtn.disabled = false;
+        noBtn.disabled = false;
+        state.textContent = "Tap to vote";
+        return;
+      }
+
+      // show voted tag
+      if (tagWrap){
+        const votedTag = document.createElement("span");
+        votedTag.className = "tag voted";
+        votedTag.textContent = `Voted: ${v.toUpperCase()}`;
+        tagWrap.appendChild(votedTag);
+      }
+
+      if (v === "yes"){
+        yesBtn.disabled = true;
+        noBtn.disabled = false;
+        state.textContent = "You voted: YES";
+      } else {
+        noBtn.disabled = true;
+        yesBtn.disabled = false;
+        state.textContent = "You voted: NO";
+      }
+    }
+
+    function syncCardCounts(carId){
+      const counts = loadCounts();
+      const yesEl = document.getElementById(`yesCount-${carId}`);
+      const noEl  = document.getElementById(`noCount-${carId}`);
+      if (yesEl) yesEl.textContent = String(counts[carId]?.yes ?? 0);
+      if (noEl)  noEl.textContent  = String(counts[carId]?.no  ?? 0);
+    }
+
+    function updateTopStats(){
+      const { yes, no } = countVotes();
+      document.getElementById("statCars").textContent = `${CARS.length} cars`;
+      document.getElementById("statYes").textContent = `${yes} yes`;
+      document.getElementById("statNo").textContent  = `${no} no`;
+    }
+
+    function renderAll(cars){
+      feed.innerHTML = "";
+      cars.forEach(car => feed.appendChild(buildCard(car)));
+      updateTopStats();
+      cars.forEach(c => {
+        syncCardVoteState(c.id);
+        syncCardCounts(c.id);
+      });
+    }
+
+    // ==========
+    // 4) UTILITIES
+    // ==========
+    function shuffle(arr){
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--){
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function exportMyVotes(){
+      const votes = loadVotes();
+      const counts = loadCounts();
+      const payload = {
+        exportedAt: new Date().toISOString(),
+        deviceVotes: votes,
+        deviceCounts: counts,
+        totalCars: CARS.length,
+        note: "Totals are device-only. Static sites need a backend for real community totals."
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "china-cars-canada-device-votes.json";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function jumpToFirstCard(){
+      const first = document.querySelector(".card");
+      if (first) first.scrollIntoView({behavior:"smooth", block:"start"});
+    }
+
+    // ==========
+    // 5) DEMO SEED (so you immediately see one “already voted” + counts)
+    // ==========
+    function seedExampleVotedCard(force=false){
+      const votes = loadVotes();
+      const counts = loadCounts();
+
+      // If user already voted on anything, don’t overwrite (unless force)
+      if (!force && Object.keys(votes).length > 0) return;
+
+      // Seed: mark Baojun Yep Plus as voted "yes" on this device
+      const demoId = "baojun-yep-plus";
+      votes[demoId] = "yes";
+      counts[demoId] = counts[demoId] || { yes:0, no:0 };
+      counts[demoId].yes = Math.max(1, counts[demoId].yes || 0);
+
+      saveJSON(VOTE_KEY, votes);
+      saveJSON(COUNT_KEY, counts);
+    }
+
+    // ==========
+    // 6) CONTROLS
+    // ==========
+    document.getElementById("resetVotesBtn").addEventListener("click", () => {
+      if (confirm("Reset votes on this device?")) resetVotes();
+    });
+    document.getElementById("shuffleBtn").addEventListener("click", () => {
+      renderAll(shuffle(CARS));
+      jumpToFirstCard();
+    });
+    document.getElementById("exportBtn").addEventListener("click", exportMyVotes);
+    document.getElementById("jumpFirstBtn").addEventListener("click", jumpToFirstCard);
+
+    // ==========
+    // INIT
+    // ==========
+    seedExampleVotedCard(false);
+    renderAll(CARS);
+  </script>
+</body>
+</html>
