@@ -1,22 +1,28 @@
 <!--
   File: index.html
-  Public long-scrolling voting page (WHITE theme)
-  Filter: Only Chinese EVs that could plausibly land in Canada <= $35K CAD (est.)
+  CanadaEVwatch — Public long-scrolling voting page (WHITE theme)
+  ✅ Real shared totals via Netlify Functions + Supabase
+     - POST  /.netlify/functions/vote
+     - GET   /.netlify/functions/counts
 
-  Images must exist at:
-  /images/<id>.jpg   (example: /images/baojun-yep-plus.jpg)
+  Images:
+    /images/<id>.jpg
 
-  Voting:
-  - Stored on THIS device only (localStorage)
-  - Shows vote counts (on this device)
-  - Pre-seeds one “already voted” example so the public page shows the voted state immediately
+  Cars list:
+    Only models plausibly <= $35K CAD (est., imported)
+
+  IMPORTANT:
+    This page assumes you added these files to your repo:
+      /netlify/functions/vote.js
+      /netlify/functions/counts.js
+    ...and created the Supabase table "votes".
 -->
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>China Cars Canada — Under $35K Vote</title>
+  <title>Canada EV Watch — Under $35K Vote</title>
   <meta name="description" content="Vote on Chinese EVs that could realistically land in Canada under $35K CAD." />
   <style>
     :root{
@@ -131,6 +137,36 @@
     .dot.y{ background: var(--yes); box-shadow:0 0 0 3px rgba(24,185,129,.14);}
     .dot.n{ background: var(--no);  box-shadow:0 0 0 3px rgba(233,61,110,.14);}
 
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid rgba(11,16,32,.12);
+      background: rgba(255,255,255,.78);
+      color: var(--ink);
+      text-decoration:none;
+      font-size:13px;
+      box-shadow: var(--shadow2);
+      transition: transform .15s ease, background .15s ease, border-color .15s ease;
+      cursor:pointer;
+      user-select:none;
+    }
+    .btn:hover{
+      transform: translateY(-1px);
+      background: rgba(255,255,255,.92);
+      border-color: rgba(11,16,32,.16);
+    }
+    .btn.primary{
+      background: linear-gradient(135deg, rgba(40,215,255,.92), rgba(109,92,255,.90));
+      border-color: rgba(11,16,32,.10);
+      color: #071022;
+    }
+    .btn.primary:hover{
+      background: linear-gradient(135deg, rgba(40,215,255,1), rgba(109,92,255,1));
+    }
     .btnLink{
       font-size:12px;
       color: var(--muted);
@@ -168,15 +204,16 @@
       color:var(--muted);
       font-size:13px;
       line-height:1.5;
-      max-width: 70ch;
+      max-width: 74ch;
     }
-    .hero .subpillRow{
+    .hero .cta{
       display:flex;
       gap:10px;
       flex-wrap:wrap;
       margin-top:14px;
+      align-items:center;
     }
-    .subpill{
+    .note{
       display:inline-flex;
       align-items:center;
       gap:8px;
@@ -347,7 +384,7 @@
     .voteState{
       color: var(--muted);
       font-size:12.5px;
-      min-width: 170px;
+      min-width: 200px;
     }
 
     .voteCounts{
@@ -409,8 +446,8 @@
       <div class="brand">
         <div class="mark" aria-hidden="true"></div>
         <div>
-          <h1>China Cars Canada</h1>
-          <p>Under $35K (estimated) — vote yes/no</p>
+          <h1>Canada EV Watch</h1>
+          <p>Chinese EVs under $35K CAD (est.) — vote yes/no</p>
         </div>
       </div>
 
@@ -418,7 +455,7 @@
         <div class="pill"><span class="dot"></span><span id="statCars">0 cars</span></div>
         <div class="pill"><span class="dot y"></span><span id="statYes">0 yes</span></div>
         <div class="pill"><span class="dot n"></span><span id="statNo">0 no</span></div>
-        <button class="btnLink" id="resetVotesBtn" type="button" title="Clears votes saved on this device">
+        <button class="btnLink" id="resetVotesBtn" type="button" title="Clears your local 'my votes' (does not delete global totals)">
           Reset my votes
         </button>
       </div>
@@ -430,13 +467,13 @@
       <div class="hero-card">
         <h2>Which Chinese EVs would you buy in Canada for under $35K?</h2>
         <p>
-          This feed only shows models that could plausibly land under <strong>$35,000 CAD</strong> (estimated).
-          Tap <strong>Yes</strong> or <strong>No</strong> as you scroll.
+          This feed only shows models that could plausibly land under <strong>$35,000 CAD</strong> (estimated, imported).
+          Votes are anonymous. Totals are shared across everyone.
         </p>
-        <div class="subpillRow">
-          <span class="subpill"><span class="spark"></span> Boxy + small EVs included</span>
-          <span class="subpill"><span class="spark"></span> One photo + essential specs</span>
-          <span class="subpill"><span class="spark"></span> “Learn more” link per car</span>
+        <div class="cta">
+          <button class="btn primary" id="jumpFirstBtn" type="button">Start voting ↓</button>
+          <button class="btn" id="refreshBtn" type="button">Refresh totals</button>
+          <span class="note"><span class="spark"></span><span id="statusText">Live totals loading…</span></span>
         </div>
       </div>
     </section>
@@ -468,84 +505,42 @@
     ];
 
     // ==========
-    // VOTING (localStorage on this device)
+    // "My vote" storage (local only, just for UI state)
     // ==========
-    const VOTE_KEY = "ccc_votes_v1";     // { [carId]: "yes"|"no" }
-    const COUNT_KEY = "ccc_counts_v1";   // { [carId]: {yes,no} } device-only
+    const MY_VOTE_PREFIX = "ccc_myvote_";
+    const FP_KEY = "ccc_fp_v1";
 
-    function loadJSON(key, fallback){
-      try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }
-      catch { return fallback; }
-    }
-    function saveJSON(key, obj){ localStorage.setItem(key, JSON.stringify(obj)); }
-
-    function loadVotes(){ return loadJSON(VOTE_KEY, {}); }
-    function loadCounts(){
-      const base = {};
-      for (const c of CARS) base[c.id] = { yes:0, no:0 };
-      const stored = loadJSON(COUNT_KEY, base);
-      for (const c of CARS){
-        if (!stored[c.id]) stored[c.id] = { yes:0, no:0 };
+    function getFingerprint(){
+      let fp = localStorage.getItem(FP_KEY);
+      if (!fp){
+        fp = (crypto.randomUUID && crypto.randomUUID()) || (String(Math.random()).slice(2) + "-" + Date.now());
+        localStorage.setItem(FP_KEY, fp);
       }
-      return stored;
+      return fp;
     }
-
-    function setVote(carId, value){
-      const votes = loadVotes();
-      const counts = loadCounts();
-
-      const prev = votes[carId] || null;
-      if (prev === "yes") counts[carId].yes = Math.max(0, (counts[carId].yes || 0) - 1);
-      if (prev === "no")  counts[carId].no  = Math.max(0, (counts[carId].no  || 0) - 1);
-
-      votes[carId] = value;
-      if (value === "yes") counts[carId].yes = (counts[carId].yes || 0) + 1;
-      if (value === "no")  counts[carId].no  = (counts[carId].no  || 0) + 1;
-
-      saveJSON(VOTE_KEY, votes);
-      saveJSON(COUNT_KEY, counts);
-
-      updateTopStats();
-      syncCardVoteState(carId);
-      syncCardCounts(carId);
+    function getMyVote(carId){
+      return localStorage.getItem(MY_VOTE_PREFIX + carId) || null;
     }
-
-    function getVote(carId){
-      const votes = loadVotes();
-      return votes[carId] || null;
+    function setMyVote(carId, vote){
+      localStorage.setItem(MY_VOTE_PREFIX + carId, vote);
     }
-
-    function resetVotes(){
-      localStorage.removeItem(VOTE_KEY);
-      localStorage.removeItem(COUNT_KEY);
-      seedDemoVote(true);
-      updateTopStats();
-      document.querySelectorAll("[data-car]").forEach(card => {
-        syncCardVoteState(card.dataset.car);
-        syncCardCounts(card.dataset.car);
-      });
-    }
-
-    function countVotes(){
-      const votes = loadVotes();
-      let yes=0, no=0;
-      for (const k in votes){
-        if (votes[k] === "yes") yes++;
-        if (votes[k] === "no") no++;
+    function clearMyVotes(){
+      for (const car of CARS){
+        localStorage.removeItem(MY_VOTE_PREFIX + car.id);
       }
-      return { yes, no };
     }
 
     // ==========
     // RENDER
     // ==========
     const feed = document.getElementById("feed");
+    const statusText = document.getElementById("statusText");
 
-    function fmt(val, suffix=""){
+    function fmt(val){
       if (val === null || val === undefined) return "—";
       const s = String(val).trim();
       if (!s || s === "—") return "—";
-      return s + suffix;
+      return s;
     }
 
     function buildCard(car){
@@ -619,13 +614,13 @@
       yesBtn.className = "voteBtn yes";
       yesBtn.type = "button";
       yesBtn.innerHTML = "👍 Yes";
-      yesBtn.addEventListener("click", () => setVote(car.id, "yes"));
+      yesBtn.addEventListener("click", () => submitVote(car.id, "yes"));
 
       const noBtn = document.createElement("button");
       noBtn.className = "voteBtn no";
       noBtn.type = "button";
       noBtn.innerHTML = "👎 No";
-      noBtn.addEventListener("click", () => setVote(car.id, "no"));
+      noBtn.addEventListener("click", () => submitVote(car.id, "no"));
 
       const state = document.createElement("div");
       state.className = "voteState";
@@ -648,8 +643,8 @@
       const voteCounts = document.createElement("div");
       voteCounts.className = "voteCounts";
       voteCounts.innerHTML = `
-        <span class="miniPill"><span class="miniDot y"></span> Yes: <span id="yesCount-${car.id}">0</span></span>
-        <span class="miniPill"><span class="miniDot n"></span> No: <span id="noCount-${car.id}">0</span></span>
+        <span class="miniPill"><span class="miniDot y"></span> Yes: <span id="yesCount-${car.id}">—</span></span>
+        <span class="miniPill"><span class="miniDot n"></span> No: <span id="noCount-${car.id}">—</span></span>
       `;
 
       meta.appendChild(title);
@@ -672,7 +667,7 @@
       const state  = card.querySelector(`#state-${carId}`);
       const tagWrap = card.querySelector(`#tags-${carId}`);
 
-      const v = getVote(carId);
+      const v = getMyVote(carId);
 
       // remove existing Voted tag
       if (tagWrap){
@@ -705,56 +700,125 @@
       }
     }
 
-    function syncCardCounts(carId){
-      const counts = loadCounts();
-      const yesEl = document.getElementById(`yesCount-${carId}`);
-      const noEl  = document.getElementById(`noCount-${carId}`);
-      if (yesEl) yesEl.textContent = String(counts[carId]?.yes ?? 0);
-      if (noEl)  noEl.textContent  = String(counts[carId]?.no  ?? 0);
-    }
+    function updateTopStats(counts){
+      const carsCount = CARS.length;
+      let yes = 0, no = 0;
 
-    function updateTopStats(){
-      const { yes, no } = countVotes();
-      document.getElementById("statCars").textContent = `${CARS.length} cars`;
+      // counts = { [carId]: {yes,no} }
+      if (counts){
+        for (const car of CARS){
+          yes += (counts[car.id]?.yes || 0);
+          no  += (counts[car.id]?.no  || 0);
+        }
+      }
+
+      document.getElementById("statCars").textContent = `${carsCount} cars`;
       document.getElementById("statYes").textContent = `${yes} yes`;
       document.getElementById("statNo").textContent  = `${no} no`;
     }
 
+    function setStatus(text){ statusText.textContent = text; }
+
     function renderAll(){
       feed.innerHTML = "";
       CARS.forEach(car => feed.appendChild(buildCard(car)));
-      updateTopStats();
-      CARS.forEach(c => {
-        syncCardVoteState(c.id);
-        syncCardCounts(c.id);
-      });
+      // initial local state
+      CARS.forEach(c => syncCardVoteState(c.id));
     }
 
     // ==========
-    // Seed one “already voted” so the public page visibly demonstrates votes
+    // BACKEND: vote + counts (Netlify Functions)
     // ==========
-    function seedDemoVote(force=false){
-      const votes = loadVotes();
-      if (!force && Object.keys(votes).length > 0) return;
+    async function refreshCounts(){
+      try{
+        setStatus("Refreshing totals…");
+        const res = await fetch("/.netlify/functions/counts", { method: "GET" });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || `Counts failed (${res.status})`);
 
-      const counts = loadCounts();
-      const demoId = "baojun-yep-plus";
-      votes[demoId] = "yes";
-      counts[demoId] = counts[demoId] || { yes:0, no:0 };
-      counts[demoId].yes = Math.max(1, counts[demoId].yes || 0);
+        const counts = data.counts || {};
+        for (const car of CARS){
+          const yesEl = document.getElementById(`yesCount-${car.id}`);
+          const noEl  = document.getElementById(`noCount-${car.id}`);
+          if (yesEl) yesEl.textContent = String(counts[car.id]?.yes ?? 0);
+          if (noEl)  noEl.textContent  = String(counts[car.id]?.no  ?? 0);
+        }
 
-      saveJSON(VOTE_KEY, votes);
-      saveJSON(COUNT_KEY, counts);
+        updateTopStats(counts);
+        setStatus("Live totals updated");
+      } catch (err){
+        console.error(err);
+        setStatus("Totals unavailable (check functions)");
+        // keep UI usable even if backend fails
+        updateTopStats(null);
+      }
     }
 
+    function disableVoteButtons(carId, disabled){
+      const card = document.querySelector(`[data-car="${carId}"]`);
+      if (!card) return;
+      const yesBtn = card.querySelector(".voteBtn.yes");
+      const noBtn  = card.querySelector(".voteBtn.no");
+      if (yesBtn) yesBtn.disabled = disabled;
+      if (noBtn)  noBtn.disabled  = disabled;
+    }
+
+    async function submitVote(carId, vote){
+      const fp = getFingerprint();
+
+      try{
+        disableVoteButtons(carId, true);
+        setStatus("Submitting vote…");
+
+        const res = await fetch("/.netlify/functions/vote", {
+          method: "POST",
+          headers: { "Content-Type":"application/json" },
+          body: JSON.stringify({ carId, vote, fingerprint: fp })
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || `Vote failed (${res.status})`);
+
+        // Save "my vote" locally for UI state
+        setMyVote(carId, vote);
+        syncCardVoteState(carId);
+
+        // Pull fresh shared totals
+        await refreshCounts();
+        setStatus(data.duplicate ? "Already voted (kept your choice)" : "Vote recorded");
+      } catch (err){
+        console.error(err);
+        setStatus("Vote failed (check functions)");
+        // Re-enable buttons if they haven't voted locally yet
+        if (!getMyVote(carId)) disableVoteButtons(carId, false);
+        alert("Vote failed. If this keeps happening, your Netlify Functions or Supabase table may not be set up yet.");
+      }
+    }
+
+    // ==========
     // Controls
+    // ==========
+    function jumpToFirstCard(){
+      const first = document.querySelector(".card");
+      if (first) first.scrollIntoView({ behavior:"smooth", block:"start" });
+    }
+
     document.getElementById("resetVotesBtn").addEventListener("click", () => {
-      if (confirm("Reset votes saved on this device?")) resetVotes();
+      if (confirm("Reset your local vote selections on this device? (This will NOT delete global totals.)")){
+        clearMyVotes();
+        CARS.forEach(c => syncCardVoteState(c.id));
+        setStatus("Local votes cleared");
+      }
     });
 
+    document.getElementById("refreshBtn").addEventListener("click", refreshCounts);
+    document.getElementById("jumpFirstBtn").addEventListener("click", jumpToFirstCard);
+
+    // ==========
     // INIT
-    seedDemoVote(false);
+    // ==========
     renderAll();
+    refreshCounts();
   </script>
 </body>
 </html>
