@@ -10,12 +10,6 @@
 
   Cars list:
     Only models plausibly <= $35K CAD (est., imported)
-
-  IMPORTANT:
-    This page assumes you added these files to your repo:
-      /netlify/functions/vote.js
-      /netlify/functions/counts.js
-    ...and created the Supabase table "votes".
 -->
 <!doctype html>
 <html lang="en">
@@ -31,9 +25,6 @@
       --muted:rgba(11,16,32,.68);
       --muted2:rgba(11,16,32,.52);
 
-      --card:#FFFFFF;
-      --stroke:rgba(11,16,32,.10);
-
       --yes:#18B981;
       --no:#E93D6E;
 
@@ -41,7 +32,6 @@
       --spark1:#28D7FF;
       --spark2:#6D5CFF;
       --spark3:#18B981;
-      --spark4:#FFB020;
 
       --shadow: 0 18px 55px rgba(11,16,32,.10);
       --shadow2: 0 10px 30px rgba(11,16,32,.08);
@@ -137,36 +127,6 @@
     .dot.y{ background: var(--yes); box-shadow:0 0 0 3px rgba(24,185,129,.14);}
     .dot.n{ background: var(--no);  box-shadow:0 0 0 3px rgba(233,61,110,.14);}
 
-    .btn{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      gap:10px;
-      padding:10px 12px;
-      border-radius:14px;
-      border:1px solid rgba(11,16,32,.12);
-      background: rgba(255,255,255,.78);
-      color: var(--ink);
-      text-decoration:none;
-      font-size:13px;
-      box-shadow: var(--shadow2);
-      transition: transform .15s ease, background .15s ease, border-color .15s ease;
-      cursor:pointer;
-      user-select:none;
-    }
-    .btn:hover{
-      transform: translateY(-1px);
-      background: rgba(255,255,255,.92);
-      border-color: rgba(11,16,32,.16);
-    }
-    .btn.primary{
-      background: linear-gradient(135deg, rgba(40,215,255,.92), rgba(109,92,255,.90));
-      border-color: rgba(11,16,32,.10);
-      color: #071022;
-    }
-    .btn.primary:hover{
-      background: linear-gradient(135deg, rgba(40,215,255,1), rgba(109,92,255,1));
-    }
     .btnLink{
       font-size:12px;
       color: var(--muted);
@@ -203,8 +163,8 @@
       margin:10px 0 0;
       color:var(--muted);
       font-size:13px;
-      line-height:1.5;
-      max-width: 74ch;
+      line-height:1.55;
+      max-width: 88ch;
     }
     .hero .cta{
       display:flex;
@@ -212,6 +172,35 @@
       flex-wrap:wrap;
       margin-top:14px;
       align-items:center;
+    }
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid rgba(11,16,32,.12);
+      background: rgba(255,255,255,.78);
+      color: var(--ink);
+      font-size:13px;
+      box-shadow: var(--shadow2);
+      transition: transform .15s ease, background .15s ease, border-color .15s ease;
+      cursor:pointer;
+      user-select:none;
+    }
+    .btn:hover{
+      transform: translateY(-1px);
+      background: rgba(255,255,255,.92);
+      border-color: rgba(11,16,32,.16);
+    }
+    .btn.primary{
+      background: linear-gradient(135deg, rgba(40,215,255,.92), rgba(109,92,255,.90));
+      border-color: rgba(11,16,32,.10);
+      color: #071022;
+    }
+    .btn.primary:hover{
+      background: linear-gradient(135deg, rgba(40,215,255,1), rgba(109,92,255,1));
     }
     .note{
       display:inline-flex;
@@ -228,6 +217,11 @@
     .spark{
       width:10px;height:10px;border-radius:999px;
       background: linear-gradient(135deg, var(--spark1), var(--spark2));
+    }
+    .question{
+      margin-top:12px;
+      font-weight:700;
+      color: rgba(11,16,32,.88);
     }
 
     /* Feed cards */
@@ -304,11 +298,6 @@
       border-color: rgba(40,215,255,.30);
       background: linear-gradient(135deg, rgba(40,215,255,.18), rgba(109,92,255,.12));
     }
-    .tag.voted{
-      border-color: rgba(24,185,129,.30);
-      background: linear-gradient(135deg, rgba(24,185,129,.18), rgba(40,215,255,.10));
-      color: rgba(11,16,32,.78);
-    }
 
     .specs{
       display:grid;
@@ -322,6 +311,7 @@
       background: rgba(255,255,255,.80);
       padding:10px;
       box-shadow: var(--shadow2);
+      min-height: 70px;
     }
     .k{
       font-size:11px;
@@ -336,13 +326,27 @@
       line-height:1.25;
     }
 
+    .learn{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      margin-top:8px;
+      font-size:13px;
+      color: rgba(11,16,32,.85);
+      text-decoration:none;
+      border-bottom:1px dashed rgba(11,16,32,.28);
+      padding-bottom:2px;
+      width: fit-content;
+    }
+    .learn:hover{ border-bottom-color: rgba(11,16,32,.55); }
+
     .actions{
       margin-top:auto;
       display:flex;
       flex-wrap:wrap;
       gap:10px;
       align-items:center;
-      justify-content:space-between;
+      justify-content:flex-start;
     }
 
     .voteGroup{
@@ -384,7 +388,7 @@
     .voteState{
       color: var(--muted);
       font-size:12.5px;
-      min-width: 200px;
+      min-width: 220px;
     }
 
     .voteCounts{
@@ -409,18 +413,6 @@
     .miniDot{ width:8px;height:8px;border-radius:99px;background: rgba(11,16,32,.25); }
     .miniDot.y{background:var(--yes);}
     .miniDot.n{background:var(--no);}
-
-    .link{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      font-size:13px;
-      color: rgba(11,16,32,.85);
-      text-decoration:none;
-      border-bottom:1px dashed rgba(11,16,32,.28);
-      padding-bottom:2px;
-    }
-    .link:hover{ border-bottom-color: rgba(11,16,32,.55); }
 
     .footer{
       padding: 22px 0 50px;
@@ -465,11 +457,14 @@
   <main class="wrap">
     <section class="hero">
       <div class="hero-card">
-        <h2>Which Chinese EVs would you buy in Canada for under $35K?</h2>
+        <h2>Canada may reopen the door to affordable Chinese EVs</h2>
         <p>
-          This feed only shows models that could plausibly land under <strong>$35,000 CAD</strong> (estimated, imported).
-          Votes are anonymous. Totals are shared across everyone.
+          Under the deal announced last Friday, Canada will allow up to 49,000 vehicles to be imported annually from China
+          with a tariff of 6.1 per cent on most-favoured nation terms. Canadian Prime Minister Mark Carney said the quota
+          could rise to reach 70,000 vehicles within five years.
         </p>
+        <p class="question">What cars would you like to see come to Canada in this price range?</p>
+
         <div class="cta">
           <button class="btn primary" id="jumpFirstBtn" type="button">Start voting ↓</button>
           <button class="btn" id="refreshBtn" type="button">Refresh totals</button>
@@ -490,18 +485,18 @@
     // DATA — Under $35K CAD (est.) only
     // ==========
     const CARS = [
-      { id:"baojun-yep-plus", make:"Baojun", model:"Yep Plus", body:"Compact Electric SUV", est_cad:"$28k–$35k", range_km:"~401", range_std:"CLTC", drivetrain:"RWD", battery:"LFP", length_mm:"3996", link:"https://www.sgmw.com.cn/" },
-      { id:"baojun-yep", make:"Baojun", model:"Yep", body:"Mini Electric SUV", est_cad:"$20k–$28k", range_km:"~303", range_std:"CLTC", drivetrain:"RWD", battery:"LFP", length_mm:"3381", link:"https://www.sgmw.com.cn/" },
+      { id:"baojun-yep-plus", make:"Baojun", model:"Yep Plus", body:"Compact Electric SUV", est_cad:"$28k–$35k", range_km:"~401", range_std:"CLTC", drivetrain:"RWD", battery:"Lithium iron phosphate", length_mm:"3996", link:"https://www.sgmw.com.cn/" },
+      { id:"baojun-yep", make:"Baojun", model:"Yep", body:"Mini Electric SUV", est_cad:"$20k–$28k", range_km:"~303", range_std:"CLTC", drivetrain:"RWD", battery:"Lithium iron phosphate", length_mm:"3381", link:"https://www.sgmw.com.cn/" },
 
-      { id:"byd-seagull", make:"BYD", model:"Seagull", body:"City Hatchback", est_cad:"$18k–$26k", range_km:"~305–405", range_std:"CLTC", drivetrain:"FWD", battery:"LFP", length_mm:"3780", link:"https://www.byd.com/" },
+      { id:"byd-seagull", make:"BYD", model:"Seagull", body:"City Hatchback", est_cad:"$18k–$26k", range_km:"~305–405", range_std:"CLTC", drivetrain:"FWD", battery:"Lithium iron phosphate", length_mm:"3780", link:"https://www.byd.com/" },
 
-      { id:"wuling-bingo", make:"Wuling", model:"Bingo", body:"Hatchback", est_cad:"$20k–$30k", range_km:"~203–333", range_std:"CLTC", drivetrain:"FWD", battery:"LFP", length_mm:"3950", link:"https://www.sgmw.com.cn/" },
-      { id:"wuling-mini-ev", make:"Wuling", model:"Hongguang Mini EV", body:"Microcar", est_cad:"$12k–$18k", range_km:"~120–215", range_std:"CLTC", drivetrain:"RWD", battery:"LFP", length_mm:"2917", link:"https://www.sgmw.com.cn/" },
-      { id:"wuling-air-ev", make:"Wuling", model:"Air EV", body:"City Car", est_cad:"$16k–$22k", range_km:"~200–300", range_std:"CLTC", drivetrain:"RWD", battery:"LFP", length_mm:"2974", link:"https://www.sgmw.com.cn/" },
+      { id:"wuling-bingo", make:"Wuling", model:"Bingo", body:"Hatchback", est_cad:"$20k–$30k", range_km:"~203–333", range_std:"CLTC", drivetrain:"FWD", battery:"Lithium iron phosphate", length_mm:"3950", link:"https://www.sgmw.com.cn/" },
+      { id:"wuling-mini-ev", make:"Wuling", model:"Hongguang Mini EV", body:"Microcar", est_cad:"$12k–$18k", range_km:"~120–215", range_std:"CLTC", drivetrain:"RWD", battery:"Lithium iron phosphate", length_mm:"2917", link:"https://www.sgmw.com.cn/" },
+      { id:"wuling-air-ev", make:"Wuling", model:"Air EV", body:"City Car", est_cad:"$16k–$22k", range_km:"~200–300", range_std:"CLTC", drivetrain:"RWD", battery:"Lithium iron phosphate", length_mm:"2974", link:"https://www.sgmw.com.cn/" },
 
-      { id:"changan-lumin", make:"Changan", model:"Lumin", body:"City Car", est_cad:"$14k–$22k", range_km:"~155–301", range_std:"CLTC", drivetrain:"FWD", battery:"LFP", length_mm:"3270", link:"https://www.changan.com.cn/" },
-      { id:"chery-qq-ice-cream", make:"Chery", model:"QQ Ice Cream", body:"Microcar", est_cad:"$12k–$18k", range_km:"~120–170", range_std:"(varies)", drivetrain:"RWD", battery:"LFP", length_mm:"2980", link:"https://www.cheryinternational.com/" },
-      { id:"baojun-kiwi-ev", make:"Baojun", model:"KiWi EV", body:"City Hatch", est_cad:"$16k–$24k", range_km:"~305", range_std:"(varies)", drivetrain:"RWD", battery:"—", length_mm:"2894", link:"https://www.sgmw.com.cn/" }
+      { id:"changan-lumin", make:"Changan", model:"Lumin", body:"City Car", est_cad:"$14k–$22k", range_km:"~155–301", range_std:"CLTC", drivetrain:"FWD", battery:"Lithium iron phosphate", length_mm:"3270", link:"https://www.changan.com.cn/" },
+      { id:"chery-qq-ice-cream", make:"Chery", model:"QQ Ice Cream", body:"Microcar", est_cad:"$12k–$18k", range_km:"~120–170", range_std:"(varies)", drivetrain:"RWD", battery:"Lithium iron phosphate", length_mm:"2980", link:"https://www.cheryinternational.com/" },
+      { id:"baojun-kiwi-ev", make:"Baojun", model:"KiWi EV", body:"City Hatch", est_cad:"$16k–$24k", range_km:"~305", range_std:"(varies)", drivetrain:"RWD", battery:"Battery type not published", length_mm:"2894", link:"https://www.sgmw.com.cn/" }
     ];
 
     // ==========
@@ -600,7 +595,13 @@
       specs.innerHTML = `
         <div class="spec"><div class="k">Estimated CAD</div><div class="v">${fmt(car.est_cad)}</div></div>
         <div class="spec"><div class="k">Range</div><div class="v">${fmt(car.range_km)} km <span style="color:var(--muted2);font-size:12px">(${fmt(car.range_std)})</span></div></div>
-        <div class="spec"><div class="k">Battery</div><div class="v">${fmt(car.battery)}</div></div>
+
+        <div class="spec" id="battery-${car.id}">
+          <div class="k">Battery</div>
+          <div class="v">${fmt(car.battery)}</div>
+          <a class="learn" href="${car.link || "#"}" target="_blank" rel="noopener noreferrer">Learn more ↗</a>
+        </div>
+
         <div class="spec"><div class="k">Length</div><div class="v">${fmt(car.length_mm)} mm</div></div>
       `;
 
@@ -630,15 +631,7 @@
       voteGroup.appendChild(noBtn);
       voteGroup.appendChild(state);
 
-      const link = document.createElement("a");
-      link.className = "link";
-      link.href = car.link || "#";
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-      link.innerHTML = "Learn more ↗";
-
       actions.appendChild(voteGroup);
-      actions.appendChild(link);
 
       const voteCounts = document.createElement("div");
       voteCounts.className = "voteCounts";
@@ -665,28 +658,14 @@
       const yesBtn = card.querySelector(".voteBtn.yes");
       const noBtn  = card.querySelector(".voteBtn.no");
       const state  = card.querySelector(`#state-${carId}`);
-      const tagWrap = card.querySelector(`#tags-${carId}`);
 
       const v = getMyVote(carId);
-
-      // remove existing Voted tag
-      if (tagWrap){
-        [...tagWrap.querySelectorAll(".tag.voted")].forEach(el => el.remove());
-      }
 
       if (!v){
         yesBtn.disabled = false;
         noBtn.disabled = false;
         state.textContent = "Tap to vote";
         return;
-      }
-
-      // show voted tag
-      if (tagWrap){
-        const votedTag = document.createElement("span");
-        votedTag.className = "tag voted";
-        votedTag.textContent = `Voted: ${v.toUpperCase()}`;
-        tagWrap.appendChild(votedTag);
       }
 
       if (v === "yes"){
@@ -704,7 +683,6 @@
       const carsCount = CARS.length;
       let yes = 0, no = 0;
 
-      // counts = { [carId]: {yes,no} }
       if (counts){
         for (const car of CARS){
           yes += (counts[car.id]?.yes || 0);
@@ -718,13 +696,6 @@
     }
 
     function setStatus(text){ statusText.textContent = text; }
-
-    function renderAll(){
-      feed.innerHTML = "";
-      CARS.forEach(car => feed.appendChild(buildCard(car)));
-      // initial local state
-      CARS.forEach(c => syncCardVoteState(c.id));
-    }
 
     // ==========
     // BACKEND: vote + counts (Netlify Functions)
@@ -749,7 +720,6 @@
       } catch (err){
         console.error(err);
         setStatus("Totals unavailable (check functions)");
-        // keep UI usable even if backend fails
         updateTopStats(null);
       }
     }
@@ -789,7 +759,6 @@
       } catch (err){
         console.error(err);
         setStatus("Vote failed (check functions)");
-        // Re-enable buttons if they haven't voted locally yet
         if (!getMyVote(carId)) disableVoteButtons(carId, false);
         alert("Vote failed. If this keeps happening, your Netlify Functions or Supabase table may not be set up yet.");
       }
@@ -817,8 +786,12 @@
     // ==========
     // INIT
     // ==========
-    renderAll();
-    refreshCounts();
+    (function init(){
+      feed.innerHTML = "";
+      CARS.forEach(car => feed.appendChild(buildCard(car)));
+      CARS.forEach(c => syncCardVoteState(c.id));
+      refreshCounts();
+    })();
   </script>
 </body>
 </html>
