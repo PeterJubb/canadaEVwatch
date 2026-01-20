@@ -1,797 +1,226 @@
-<!--
-  File: index.html
-  CanadaEVwatch — Public long-scrolling voting page (WHITE theme)
-  ✅ Real shared totals via Netlify Functions + Supabase
-     - POST  /.netlify/functions/vote
-     - GET   /.netlify/functions/counts
-
-  Images:
-    /images/<id>.jpg
-
-  Cars list:
-    Only models plausibly <= $35K CAD (est., imported)
--->
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Canada EV Watch — Under $35K Vote</title>
-  <meta name="description" content="Vote on Chinese EVs that could realistically land in Canada under $35K CAD." />
-  <style>
-    :root{
-      --bg:#F6F8FF;
-      --ink:#0B1020;
-      --muted:rgba(11,16,32,.68);
-      --muted2:rgba(11,16,32,.52);
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Canada EV Watch — Under $35K Vote</title>
 
-      --yes:#18B981;
-      --no:#E93D6E;
+<style>
+/* ---------- Core theme ---------- */
+:root{
+  --bg:#F6F8FF;
+  --ink:#0B1020;
+  --muted:rgba(11,16,32,.65);
+  --yes:#18B981;
+  --no:#E93D6E;
+  --shadow:0 14px 40px rgba(11,16,32,.10);
+  --radius:22px;
+  --maxw:1120px;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+  background:linear-gradient(180deg,var(--bg),#fff);
+  color:var(--ink);
+}
+.wrap{width:min(var(--maxw),calc(100% - 32px));margin:auto}
 
-      /* Lightspark-ish accents */
-      --spark1:#28D7FF;
-      --spark2:#6D5CFF;
-      --spark3:#18B981;
+/* ---------- Header ---------- */
+header{
+  position:sticky;top:0;z-index:50;
+  background:rgba(246,248,255,.9);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid rgba(0,0,0,.08);
+}
+.header-inner{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:14px 0;flex-wrap:wrap;gap:12px;
+}
+.brand h1{margin:0;font-size:15px}
+.brand p{margin:2px 0 0;font-size:12px;color:var(--muted)}
 
-      --shadow: 0 18px 55px rgba(11,16,32,.10);
-      --shadow2: 0 10px 30px rgba(11,16,32,.08);
-      --radius: 22px;
-      --maxw: 1120px;
-    }
+/* ---------- Hero ---------- */
+.hero{padding:24px 0 10px}
+.hero-card{
+  background:#fff;
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:18px;
+}
+.hero h2{margin:0;font-size:22px}
+.hero p{margin:10px 0 0;font-size:13px;color:var(--muted);line-height:1.5}
+.hero strong{color:var(--ink)}
 
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;
-      color:var(--ink);
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
-      background:
-        radial-gradient(900px 520px at 20% -10%, rgba(40,215,255,.18), transparent 55%),
-        radial-gradient(900px 520px at 85% 0%, rgba(109,92,255,.14), transparent 55%),
-        radial-gradient(900px 520px at 20% 120%, rgba(24,185,129,.12), transparent 55%),
-        linear-gradient(180deg, var(--bg) 0%, #FFFFFF 60%, var(--bg) 100%);
-      overflow-x:hidden;
-    }
+/* ---------- Feed ---------- */
+.feed{padding:16px 0 40px}
+.card{
+  background:#fff;
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:16px;
+  margin-bottom:16px;
+  display:grid;
+  grid-template-columns:1.2fr .8fr;
+  gap:16px;
+}
+@media(max-width:850px){.card{grid-template-columns:1fr}}
 
-    a{color:inherit}
-    .wrap{
-      width:min(var(--maxw), calc(100% - 32px));
-      margin:0 auto;
-    }
+.img{
+  border-radius:18px;
+  overflow:hidden;
+}
+.img img{width:100%;height:100%;object-fit:cover}
 
-    /* Top bar */
-    .topbar{
-      position:sticky;
-      top:0;
-      z-index:50;
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      background: rgba(246,248,255,.80);
-      border-bottom:1px solid rgba(11,16,32,.08);
-    }
-    .topbar-inner{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      padding:14px 0;
-      gap:14px;
-      flex-wrap:wrap;
-    }
-    .brand{
-      display:flex;
-      align-items:center;
-      gap:12px;
-    }
-    .mark{
-      width:38px;height:38px;border-radius:15px;
-      background:
-        radial-gradient(14px 14px at 35% 35%, rgba(255,255,255,.90), transparent 60%),
-        linear-gradient(135deg, rgba(40,215,255,.95), rgba(109,92,255,.95) 55%, rgba(24,185,129,.92));
-      box-shadow: 0 14px 40px rgba(109,92,255,.18);
-      border:1px solid rgba(11,16,32,.10);
-    }
-    .brand h1{
-      font-size:14px;
-      margin:0;
-      letter-spacing:.2px;
-      line-height:1.1;
-    }
-    .brand p{
-      margin:2px 0 0;
-      color:var(--muted2);
-      font-size:12px;
-      line-height:1.2;
-    }
+/* ---------- Meta ---------- */
+.meta{display:flex;flex-direction:column;gap:10px}
+.title h3{margin:0;font-size:18px}
+.sub{font-size:13px;color:var(--muted)}
 
-    .stats{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      flex-wrap:wrap;
-      justify-content:flex-end;
-    }
-    .pill{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      padding:8px 10px;
-      border-radius:999px;
-      background: rgba(255,255,255,.70);
-      border:1px solid rgba(11,16,32,.10);
-      color:var(--muted);
-      font-size:12px;
-      box-shadow: var(--shadow2);
-      white-space:nowrap;
-    }
-    .dot{ width:8px;height:8px;border-radius:99px;background: rgba(11,16,32,.25); }
-    .dot.y{ background: var(--yes); box-shadow:0 0 0 3px rgba(24,185,129,.14);}
-    .dot.n{ background: var(--no);  box-shadow:0 0 0 3px rgba(233,61,110,.14);}
+.tagrow{display:flex;gap:8px;flex-wrap:wrap}
+.tag{
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:12px;
+  background:rgba(0,0,0,.04);
+}
 
-    .btnLink{
-      font-size:12px;
-      color: var(--muted);
-      background: transparent;
-      border:none;
-      padding:6px 6px;
-      cursor:pointer;
-      text-decoration: underline;
-      text-decoration-style: dotted;
-      text-underline-offset: 3px;
-    }
-    .btnLink:hover{ color: rgba(11,16,32,.82); }
+/* ---------- Specs ---------- */
+.specs{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+.spec{
+  border-radius:14px;
+  border:1px solid rgba(0,0,0,.08);
+  padding:10px;
+}
+.k{font-size:11px;color:var(--muted);text-transform:uppercase}
+.v{margin-top:4px;font-size:13px}
 
-    /* Hero */
-    .hero{ padding:26px 0 10px; }
-    .hero-card{
-      border-radius: var(--radius);
-      border: 1px solid rgba(11,16,32,.10);
-      background:
-        radial-gradient(900px 280px at 15% 15%, rgba(40,215,255,.16), transparent 60%),
-        radial-gradient(700px 260px at 85% 35%, rgba(109,92,255,.12), transparent 55%),
-        linear-gradient(180deg, rgba(255,255,255,.95), rgba(255,255,255,.78));
-      box-shadow: var(--shadow);
-      padding:18px 18px 16px;
-      overflow:hidden;
-    }
-    .hero h2{
-      margin:0;
-      font-size:22px;
-      letter-spacing:.2px;
-      line-height:1.15;
-    }
-    .hero p{
-      margin:10px 0 0;
-      color:var(--muted);
-      font-size:13px;
-      line-height:1.55;
-      max-width: 88ch;
-    }
-    .hero .cta{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      margin-top:14px;
-      align-items:center;
-    }
-    .btn{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      gap:10px;
-      padding:10px 12px;
-      border-radius:14px;
-      border:1px solid rgba(11,16,32,.12);
-      background: rgba(255,255,255,.78);
-      color: var(--ink);
-      font-size:13px;
-      box-shadow: var(--shadow2);
-      transition: transform .15s ease, background .15s ease, border-color .15s ease;
-      cursor:pointer;
-      user-select:none;
-    }
-    .btn:hover{
-      transform: translateY(-1px);
-      background: rgba(255,255,255,.92);
-      border-color: rgba(11,16,32,.16);
-    }
-    .btn.primary{
-      background: linear-gradient(135deg, rgba(40,215,255,.92), rgba(109,92,255,.90));
-      border-color: rgba(11,16,32,.10);
-      color: #071022;
-    }
-    .btn.primary:hover{
-      background: linear-gradient(135deg, rgba(40,215,255,1), rgba(109,92,255,1));
-    }
-    .note{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding:8px 10px;
-      border-radius:999px;
-      border:1px solid rgba(11,16,32,.10);
-      background: rgba(255,255,255,.72);
-      box-shadow: var(--shadow2);
-      font-size:12px;
-      color: var(--muted);
-    }
-    .spark{
-      width:10px;height:10px;border-radius:999px;
-      background: linear-gradient(135deg, var(--spark1), var(--spark2));
-    }
-    .question{
-      margin-top:12px;
-      font-weight:700;
-      color: rgba(11,16,32,.88);
-    }
+/* ---------- Learn more ---------- */
+.learn{
+  margin-top:6px;
+  font-size:13px;
+  display:inline-block;
+  color:#000;
+  text-decoration:none;
+  border-bottom:1px dashed rgba(0,0,0,.4);
+}
 
-    /* Feed cards */
-    .feed{ padding: 10px 0 44px; }
+/* ---------- Voting ---------- */
+.actions{margin-top:auto;display:flex;gap:10px;flex-wrap:wrap}
+.voteBtn{
+  padding:10px 14px;
+  border-radius:14px;
+  border:1px solid rgba(0,0,0,.12);
+  background:#fff;
+  cursor:pointer;
+}
+.voteBtn.yes{border-color:rgba(24,185,129,.4)}
+.voteBtn.no{border-color:rgba(233,61,110,.4)}
+.voteState{font-size:12px;color:var(--muted)}
 
-    .card{
-      display:grid;
-      grid-template-columns: 1.25fr .75fr;
-      gap:16px;
-      padding:16px;
-      border-radius: var(--radius);
-      background:
-        radial-gradient(700px 280px at 20% 10%, rgba(40,215,255,.12), transparent 55%),
-        radial-gradient(700px 280px at 90% 40%, rgba(109,92,255,.10), transparent 55%),
-        linear-gradient(180deg, rgba(255,255,255,.98), rgba(255,255,255,.78));
-      border:1px solid rgba(11,16,32,.10);
-      box-shadow: var(--shadow);
-      margin: 14px 0;
-      overflow:hidden;
-    }
-
-    .img{
-      border-radius: 18px;
-      overflow:hidden;
-      border:1px solid rgba(11,16,32,.10);
-      background: rgba(11,16,32,.02);
-      min-height: 240px;
-      box-shadow: 0 14px 40px rgba(11,16,32,.10);
-    }
-    .img img{
-      display:block;
-      width:100%;
-      height:100%;
-      object-fit:cover;
-      transform: scale(1.01);
-    }
-
-    .meta{
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-      min-height: 240px;
-    }
-    .title h4{
-      margin:0;
-      font-size:18px;
-      letter-spacing:.2px;
-      line-height:1.15;
-    }
-    .sub{
-      margin:4px 0 0;
-      color:var(--muted);
-      font-size:12.5px;
-      line-height:1.35;
-    }
-
-    .tagrow{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      margin-top:10px;
-    }
-    .tag{
-      font-size:12px;
-      color: var(--muted);
-      border: 1px solid rgba(11,16,32,.10);
-      background: rgba(255,255,255,.70);
-      padding:6px 10px;
-      border-radius:999px;
-      box-shadow: var(--shadow2);
-    }
-    .tag.sparkTag{
-      color: rgba(11,16,32,.78);
-      border-color: rgba(40,215,255,.30);
-      background: linear-gradient(135deg, rgba(40,215,255,.18), rgba(109,92,255,.12));
-    }
-
-    .specs{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:8px;
-      margin-top:4px;
-    }
-    .spec{
-      border-radius:16px;
-      border:1px solid rgba(11,16,32,.10);
-      background: rgba(255,255,255,.80);
-      padding:10px;
-      box-shadow: var(--shadow2);
-      min-height: 70px;
-    }
-    .k{
-      font-size:11px;
-      color:var(--muted2);
-      letter-spacing:.3px;
-      text-transform:uppercase;
-    }
-    .v{
-      margin-top:4px;
-      font-size:13px;
-      color:var(--ink);
-      line-height:1.25;
-    }
-
-    .learn{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      margin-top:8px;
-      font-size:13px;
-      color: rgba(11,16,32,.85);
-      text-decoration:none;
-      border-bottom:1px dashed rgba(11,16,32,.28);
-      padding-bottom:2px;
-      width: fit-content;
-    }
-    .learn:hover{ border-bottom-color: rgba(11,16,32,.55); }
-
-    .actions{
-      margin-top:auto;
-      display:flex;
-      flex-wrap:wrap;
-      gap:10px;
-      align-items:center;
-      justify-content:flex-start;
-    }
-
-    .voteGroup{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      flex-wrap:wrap;
-    }
-    .voteBtn{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding:10px 12px;
-      border-radius: 16px;
-      border:1px solid rgba(11,16,32,.12);
-      background: rgba(255,255,255,.92);
-      color:var(--ink);
-      cursor:pointer;
-      font-size:13px;
-      transition: transform .15s ease, background .15s ease, border-color .15s ease, opacity .15s ease;
-      user-select:none;
-      box-shadow: var(--shadow2);
-    }
-    .voteBtn:hover{
-      transform: translateY(-1px);
-      background: rgba(255,255,255,1);
-      border-color: rgba(11,16,32,.16);
-    }
-    .voteBtn.yes{
-      border-color: rgba(24,185,129,.28);
-      background: linear-gradient(135deg, rgba(24,185,129,.14), rgba(40,215,255,.08));
-    }
-    .voteBtn.no{
-      border-color: rgba(233,61,110,.28);
-      background: linear-gradient(135deg, rgba(233,61,110,.12), rgba(109,92,255,.08));
-    }
-    .voteBtn[disabled]{ cursor:not-allowed; opacity:.55; transform:none; }
-
-    .voteState{
-      color: var(--muted);
-      font-size:12.5px;
-      min-width: 220px;
-    }
-
-    .voteCounts{
-      margin-top:8px;
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      align-items:center;
-      color: var(--muted);
-      font-size:12px;
-    }
-    .miniPill{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding:7px 10px;
-      border-radius:999px;
-      border:1px solid rgba(11,16,32,.10);
-      background: rgba(255,255,255,.80);
-      box-shadow: var(--shadow2);
-    }
-    .miniDot{ width:8px;height:8px;border-radius:99px;background: rgba(11,16,32,.25); }
-    .miniDot.y{background:var(--yes);}
-    .miniDot.n{background:var(--no);}
-
-    .footer{
-      padding: 22px 0 50px;
-      color: var(--muted2);
-      font-size: 12px;
-      line-height:1.45;
-      text-align:center;
-    }
-
-    @media (max-width: 860px){
-      .card{ grid-template-columns: 1fr; }
-      .img{ min-height: 220px; }
-      .meta{ min-height:auto; }
-      .stats{ justify-content:flex-start; }
-      .voteState{ min-width: unset; }
-    }
-  </style>
+.voteCounts{
+  display:flex;gap:10px;font-size:12px;color:var(--muted)
+}
+</style>
 </head>
 
 <body>
-  <header class="topbar">
-    <div class="wrap topbar-inner">
-      <div class="brand">
-        <div class="mark" aria-hidden="true"></div>
-        <div>
-          <h1>Canada EV Watch</h1>
-          <p>Chinese EVs under $35K CAD (est.) — vote yes/no</p>
+
+<header>
+  <div class="wrap header-inner">
+    <div class="brand">
+      <h1>Canada EV Watch</h1>
+      <p>Chinese EVs under $35K CAD — vote yes or no</p>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+<section class="hero">
+  <div class="hero-card">
+    <h2>Canada will allow affordable Chinese EV imports</h2>
+    <p>
+      Canada will allow up to <strong>49,000 vehicles</strong> to be imported annually from China
+      with a tariff of <strong>6.1%</strong> on most-favoured nation terms.
+      Prime Minister <strong>Mark Carney</strong> said the quota could rise to
+      <strong>70,000 vehicles within five years</strong>.
+    </p>
+    <p><strong>What cars would you like to see come to Canada in this price range?</strong></p>
+  </div>
+</section>
+
+<section class="feed" id="feed"></section>
+
+</main>
+
+<script>
+/* ---------- Data ---------- */
+const CARS = [
+{
+  id:"baojun-yep",
+  make:"Baojun",
+  model:"Yep",
+  body:"Mini Electric SUV",
+  price:"$20k–$28k",
+  range:"~303 km (CLTC)",
+  topSpeed:"100 km/h",
+  battery:"Lithium iron phosphate",
+  charge:"≈ 30–35 kW DC",
+  length:"3381 mm",
+  link:"https://www.sgmw.com.cn/"
+}
+];
+
+/* ---------- Render ---------- */
+const feed=document.getElementById("feed");
+
+CARS.forEach(c=>{
+  const el=document.createElement("div");
+  el.className="card";
+  el.innerHTML=`
+    <div class="img">
+      <img src="/images/${c.id}.jpg" alt="${c.make} ${c.model}">
+    </div>
+
+    <div class="meta">
+      <div class="title">
+        <h3>${c.make} ${c.model}</h3>
+        <div class="sub">${c.body}</div>
+        <div class="tagrow">
+          <span class="tag">Est. CAD ${c.price}</span>
         </div>
       </div>
 
-      <div class="stats" aria-live="polite">
-        <div class="pill"><span class="dot"></span><span id="statCars">0 cars</span></div>
-        <div class="pill"><span class="dot y"></span><span id="statYes">0 yes</span></div>
-        <div class="pill"><span class="dot n"></span><span id="statNo">0 no</span></div>
-        <button class="btnLink" id="resetVotesBtn" type="button" title="Clears your local 'my votes' (does not delete global totals)">
-          Reset my votes
-        </button>
+      <div class="specs">
+        <div class="spec"><div class="k">Range</div><div class="v">${c.range}</div></div>
+        <div class="spec"><div class="k">Top Speed</div><div class="v">${c.topSpeed}</div></div>
+        <div class="spec"><div class="k">Battery</div><div class="v">${c.battery}</div></div>
+        <div class="spec"><div class="k">DC Charge Rate</div><div class="v">${c.charge}</div></div>
+        <div class="spec"><div class="k">Length</div><div class="v">${c.length}</div></div>
+      </div>
+
+      <a class="learn" href="${c.link}" target="_blank">Learn more ↗</a>
+
+      <div class="actions">
+        <button class="voteBtn yes">👍 Yes</button>
+        <button class="voteBtn no">👎 No</button>
+        <div class="voteState">Tap to vote</div>
+      </div>
+
+      <div class="voteCounts">
+        <span>Yes: 0</span>
+        <span>No: 0</span>
       </div>
     </div>
-  </header>
+  `;
+  feed.appendChild(el);
+});
+</script>
 
-  <main class="wrap">
-    <section class="hero">
-      <div class="hero-card">
-        <h2>Canada may reopen the door to affordable Chinese EVs</h2>
-        <p>
-          Under the deal announced last Friday, Canada will allow up to 49,000 vehicles to be imported annually from China
-          with a tariff of 6.1 per cent on most-favoured nation terms. Canadian Prime Minister Mark Carney said the quota
-          could rise to reach 70,000 vehicles within five years.
-        </p>
-        <p class="question">What cars would you like to see come to Canada in this price range?</p>
-
-        <div class="cta">
-          <button class="btn primary" id="jumpFirstBtn" type="button">Start voting ↓</button>
-          <button class="btn" id="refreshBtn" type="button">Refresh totals</button>
-          <span class="note"><span class="spark"></span><span id="statusText">Live totals loading…</span></span>
-        </div>
-      </div>
-    </section>
-
-    <section class="feed" id="feed" aria-label="Car voting feed"></section>
-
-    <footer class="footer">
-      Tip: If a card shows “Missing image”, check the filename in <code>/images/&lt;id&gt;.jpg</code>.
-    </footer>
-  </main>
-
-  <script>
-    // ==========
-    // DATA — Under $35K CAD (est.) only
-    // ==========
-    const CARS = [
-      { id:"baojun-yep-plus", make:"Baojun", model:"Yep Plus", body:"Compact Electric SUV", est_cad:"$28k–$35k", range_km:"~401", range_std:"CLTC", drivetrain:"RWD", battery:"Lithium iron phosphate", length_mm:"3996", link:"https://www.sgmw.com.cn/" },
-      { id:"baojun-yep", make:"Baojun", model:"Yep", body:"Mini Electric SUV", est_cad:"$20k–$28k", range_km:"~303", range_std:"CLTC", drivetrain:"RWD", battery:"Lithium iron phosphate", length_mm:"3381", link:"https://www.sgmw.com.cn/" },
-
-      { id:"byd-seagull", make:"BYD", model:"Seagull", body:"City Hatchback", est_cad:"$18k–$26k", range_km:"~305–405", range_std:"CLTC", drivetrain:"FWD", battery:"Lithium iron phosphate", length_mm:"3780", link:"https://www.byd.com/" },
-
-      { id:"wuling-bingo", make:"Wuling", model:"Bingo", body:"Hatchback", est_cad:"$20k–$30k", range_km:"~203–333", range_std:"CLTC", drivetrain:"FWD", battery:"Lithium iron phosphate", length_mm:"3950", link:"https://www.sgmw.com.cn/" },
-      { id:"wuling-mini-ev", make:"Wuling", model:"Hongguang Mini EV", body:"Microcar", est_cad:"$12k–$18k", range_km:"~120–215", range_std:"CLTC", drivetrain:"RWD", battery:"Lithium iron phosphate", length_mm:"2917", link:"https://www.sgmw.com.cn/" },
-      { id:"wuling-air-ev", make:"Wuling", model:"Air EV", body:"City Car", est_cad:"$16k–$22k", range_km:"~200–300", range_std:"CLTC", drivetrain:"RWD", battery:"Lithium iron phosphate", length_mm:"2974", link:"https://www.sgmw.com.cn/" },
-
-      { id:"changan-lumin", make:"Changan", model:"Lumin", body:"City Car", est_cad:"$14k–$22k", range_km:"~155–301", range_std:"CLTC", drivetrain:"FWD", battery:"Lithium iron phosphate", length_mm:"3270", link:"https://www.changan.com.cn/" },
-      { id:"chery-qq-ice-cream", make:"Chery", model:"QQ Ice Cream", body:"Microcar", est_cad:"$12k–$18k", range_km:"~120–170", range_std:"(varies)", drivetrain:"RWD", battery:"Lithium iron phosphate", length_mm:"2980", link:"https://www.cheryinternational.com/" },
-      { id:"baojun-kiwi-ev", make:"Baojun", model:"KiWi EV", body:"City Hatch", est_cad:"$16k–$24k", range_km:"~305", range_std:"(varies)", drivetrain:"RWD", battery:"Battery type not published", length_mm:"2894", link:"https://www.sgmw.com.cn/" }
-    ];
-
-    // ==========
-    // "My vote" storage (local only, just for UI state)
-    // ==========
-    const MY_VOTE_PREFIX = "ccc_myvote_";
-    const FP_KEY = "ccc_fp_v1";
-
-    function getFingerprint(){
-      let fp = localStorage.getItem(FP_KEY);
-      if (!fp){
-        fp = (crypto.randomUUID && crypto.randomUUID()) || (String(Math.random()).slice(2) + "-" + Date.now());
-        localStorage.setItem(FP_KEY, fp);
-      }
-      return fp;
-    }
-    function getMyVote(carId){
-      return localStorage.getItem(MY_VOTE_PREFIX + carId) || null;
-    }
-    function setMyVote(carId, vote){
-      localStorage.setItem(MY_VOTE_PREFIX + carId, vote);
-    }
-    function clearMyVotes(){
-      for (const car of CARS){
-        localStorage.removeItem(MY_VOTE_PREFIX + car.id);
-      }
-    }
-
-    // ==========
-    // RENDER
-    // ==========
-    const feed = document.getElementById("feed");
-    const statusText = document.getElementById("statusText");
-
-    function fmt(val){
-      if (val === null || val === undefined) return "—";
-      const s = String(val).trim();
-      if (!s || s === "—") return "—";
-      return s;
-    }
-
-    function buildCard(car){
-      const card = document.createElement("article");
-      card.className = "card";
-      card.id = `car-${car.id}`;
-      card.dataset.car = car.id;
-
-      const imgWrap = document.createElement("div");
-      imgWrap.className = "img";
-      const img = document.createElement("img");
-      img.alt = `${car.make} ${car.model}`;
-      img.loading = "lazy";
-      img.src = `/images/${car.id}.jpg`;
-      img.onerror = () => {
-        img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(`
-          <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800">
-            <defs>
-              <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0" stop-color="#28D7FF" stop-opacity=".18"/>
-                <stop offset=".55" stop-color="#6D5CFF" stop-opacity=".14"/>
-                <stop offset="1" stop-color="#18B981" stop-opacity=".12"/>
-              </linearGradient>
-            </defs>
-            <rect width="100%" height="100%" fill="#FFFFFF"/>
-            <rect x="40" y="40" width="1120" height="720" rx="40" fill="url(#g)" stroke="rgba(11,16,32,.12)" />
-            <text x="80" y="160" fill="rgba(11,16,32,.90)" font-family="ui-sans-serif,system-ui" font-size="56" font-weight="700">
-              Missing image
-            </text>
-            <text x="80" y="230" fill="rgba(11,16,32,.62)" font-family="ui-sans-serif,system-ui" font-size="28">
-              /images/${car.id}.jpg
-            </text>
-          </svg>
-        `);
-      };
-      imgWrap.appendChild(img);
-
-      const meta = document.createElement("div");
-      meta.className = "meta";
-
-      const title = document.createElement("div");
-      title.className = "title";
-      title.innerHTML = `
-        <div>
-          <h4>${car.make} ${car.model}</h4>
-          <div class="sub">${car.body || ""}</div>
-          <div class="tagrow" id="tags-${car.id}">
-            <span class="tag sparkTag">Est. CAD ${fmt(car.est_cad)}</span>
-            <span class="tag">${fmt(car.range_std)}</span>
-            <span class="tag">${fmt(car.drivetrain)}</span>
-          </div>
-        </div>
-      `;
-
-      const specs = document.createElement("div");
-      specs.className = "specs";
-      specs.innerHTML = `
-        <div class="spec"><div class="k">Estimated CAD</div><div class="v">${fmt(car.est_cad)}</div></div>
-        <div class="spec"><div class="k">Range</div><div class="v">${fmt(car.range_km)} km <span style="color:var(--muted2);font-size:12px">(${fmt(car.range_std)})</span></div></div>
-
-        <div class="spec" id="battery-${car.id}">
-          <div class="k">Battery</div>
-          <div class="v">${fmt(car.battery)}</div>
-          <a class="learn" href="${car.link || "#"}" target="_blank" rel="noopener noreferrer">Learn more ↗</a>
-        </div>
-
-        <div class="spec"><div class="k">Length</div><div class="v">${fmt(car.length_mm)} mm</div></div>
-      `;
-
-      const actions = document.createElement("div");
-      actions.className = "actions";
-
-      const voteGroup = document.createElement("div");
-      voteGroup.className = "voteGroup";
-
-      const yesBtn = document.createElement("button");
-      yesBtn.className = "voteBtn yes";
-      yesBtn.type = "button";
-      yesBtn.innerHTML = "👍 Yes";
-      yesBtn.addEventListener("click", () => submitVote(car.id, "yes"));
-
-      const noBtn = document.createElement("button");
-      noBtn.className = "voteBtn no";
-      noBtn.type = "button";
-      noBtn.innerHTML = "👎 No";
-      noBtn.addEventListener("click", () => submitVote(car.id, "no"));
-
-      const state = document.createElement("div");
-      state.className = "voteState";
-      state.id = `state-${car.id}`;
-
-      voteGroup.appendChild(yesBtn);
-      voteGroup.appendChild(noBtn);
-      voteGroup.appendChild(state);
-
-      actions.appendChild(voteGroup);
-
-      const voteCounts = document.createElement("div");
-      voteCounts.className = "voteCounts";
-      voteCounts.innerHTML = `
-        <span class="miniPill"><span class="miniDot y"></span> Yes: <span id="yesCount-${car.id}">—</span></span>
-        <span class="miniPill"><span class="miniDot n"></span> No: <span id="noCount-${car.id}">—</span></span>
-      `;
-
-      meta.appendChild(title);
-      meta.appendChild(specs);
-      meta.appendChild(actions);
-      meta.appendChild(voteCounts);
-
-      card.appendChild(imgWrap);
-      card.appendChild(meta);
-
-      return card;
-    }
-
-    function syncCardVoteState(carId){
-      const card = document.querySelector(`[data-car="${carId}"]`);
-      if (!card) return;
-
-      const yesBtn = card.querySelector(".voteBtn.yes");
-      const noBtn  = card.querySelector(".voteBtn.no");
-      const state  = card.querySelector(`#state-${carId}`);
-
-      const v = getMyVote(carId);
-
-      if (!v){
-        yesBtn.disabled = false;
-        noBtn.disabled = false;
-        state.textContent = "Tap to vote";
-        return;
-      }
-
-      if (v === "yes"){
-        yesBtn.disabled = true;
-        noBtn.disabled = false;
-        state.textContent = "You voted: YES";
-      } else {
-        noBtn.disabled = true;
-        yesBtn.disabled = false;
-        state.textContent = "You voted: NO";
-      }
-    }
-
-    function updateTopStats(counts){
-      const carsCount = CARS.length;
-      let yes = 0, no = 0;
-
-      if (counts){
-        for (const car of CARS){
-          yes += (counts[car.id]?.yes || 0);
-          no  += (counts[car.id]?.no  || 0);
-        }
-      }
-
-      document.getElementById("statCars").textContent = `${carsCount} cars`;
-      document.getElementById("statYes").textContent = `${yes} yes`;
-      document.getElementById("statNo").textContent  = `${no} no`;
-    }
-
-    function setStatus(text){ statusText.textContent = text; }
-
-    // ==========
-    // BACKEND: vote + counts (Netlify Functions)
-    // ==========
-    async function refreshCounts(){
-      try{
-        setStatus("Refreshing totals…");
-        const res = await fetch("/.netlify/functions/counts", { method: "GET" });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.error || `Counts failed (${res.status})`);
-
-        const counts = data.counts || {};
-        for (const car of CARS){
-          const yesEl = document.getElementById(`yesCount-${car.id}`);
-          const noEl  = document.getElementById(`noCount-${car.id}`);
-          if (yesEl) yesEl.textContent = String(counts[car.id]?.yes ?? 0);
-          if (noEl)  noEl.textContent  = String(counts[car.id]?.no  ?? 0);
-        }
-
-        updateTopStats(counts);
-        setStatus("Live totals updated");
-      } catch (err){
-        console.error(err);
-        setStatus("Totals unavailable (check functions)");
-        updateTopStats(null);
-      }
-    }
-
-    function disableVoteButtons(carId, disabled){
-      const card = document.querySelector(`[data-car="${carId}"]`);
-      if (!card) return;
-      const yesBtn = card.querySelector(".voteBtn.yes");
-      const noBtn  = card.querySelector(".voteBtn.no");
-      if (yesBtn) yesBtn.disabled = disabled;
-      if (noBtn)  noBtn.disabled  = disabled;
-    }
-
-    async function submitVote(carId, vote){
-      const fp = getFingerprint();
-
-      try{
-        disableVoteButtons(carId, true);
-        setStatus("Submitting vote…");
-
-        const res = await fetch("/.netlify/functions/vote", {
-          method: "POST",
-          headers: { "Content-Type":"application/json" },
-          body: JSON.stringify({ carId, vote, fingerprint: fp })
-        });
-
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.error || `Vote failed (${res.status})`);
-
-        // Save "my vote" locally for UI state
-        setMyVote(carId, vote);
-        syncCardVoteState(carId);
-
-        // Pull fresh shared totals
-        await refreshCounts();
-        setStatus(data.duplicate ? "Already voted (kept your choice)" : "Vote recorded");
-      } catch (err){
-        console.error(err);
-        setStatus("Vote failed (check functions)");
-        if (!getMyVote(carId)) disableVoteButtons(carId, false);
-        alert("Vote failed. If this keeps happening, your Netlify Functions or Supabase table may not be set up yet.");
-      }
-    }
-
-    // ==========
-    // Controls
-    // ==========
-    function jumpToFirstCard(){
-      const first = document.querySelector(".card");
-      if (first) first.scrollIntoView({ behavior:"smooth", block:"start" });
-    }
-
-    document.getElementById("resetVotesBtn").addEventListener("click", () => {
-      if (confirm("Reset your local vote selections on this device? (This will NOT delete global totals.)")){
-        clearMyVotes();
-        CARS.forEach(c => syncCardVoteState(c.id));
-        setStatus("Local votes cleared");
-      }
-    });
-
-    document.getElementById("refreshBtn").addEventListener("click", refreshCounts);
-    document.getElementById("jumpFirstBtn").addEventListener("click", jumpToFirstCard);
-
-    // ==========
-    // INIT
-    // ==========
-    (function init(){
-      feed.innerHTML = "";
-      CARS.forEach(car => feed.appendChild(buildCard(car)));
-      CARS.forEach(c => syncCardVoteState(c.id));
-      refreshCounts();
-    })();
-  </script>
 </body>
 </html>
